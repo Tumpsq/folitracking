@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+  <!--<![endif]-->
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Föli Web App</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script>
+      var map;
+
+      var transportVehicles = null;
+      var markers = {};
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 60.45451, lng: 22.314824 },
+          zoom: 13,
+        });
+
+        fetch("http://data.foli.fi/citybike")
+          .then((response) => {
+            return response.json();
+          })
+          .then((data) => {
+            Object.entries(data.racks).forEach((entry) => {
+              let key = entry[0];
+              let rack = entry[1];
+
+              var contentString = `<div class="info-window"><div class="info-window-title"><h3>${
+                rack.name
+              }</h3></div><div className="info-window-details"><div><h4>Slots : ${
+                rack.slots_total ? rack.slots_total : "?"
+              }</h4></div><div><h4>Bikes available : ${
+                rack.bikes_avail
+              }</h4></div><div><h4>Slots available : ${
+                rack.slots_avail
+              }</h4></div></div></div>`;
+
+              var infowindow = new google.maps.InfoWindow({
+                content: contentString,
+              });
+
+              var marker = new google.maps.Marker({
+                position: { lat: rack.lat, lng: rack.lon },
+                icon: "assets/img/directions_bike-black-18dp.svg",
+                map: map,
+              });
+
+              marker.addListener("mouseover", function () {
+                infowindow.open(map, marker);
+              });
+              marker.addListener("mouseout", function () {
+                infowindow.close(map, marker);
+              });
+            });
+          });
+        setInterval(() => {
+          fetch("http://data.foli.fi/siri/vm")
+            .then((response) => {
+              return response.json();
+            })
+            .then((data) => {
+              if (data.status === "OK" && data.result.vehicles) {
+                Object.entries(data.result.vehicles).forEach((entry, index) => {
+                  var key = entry[0];
+                  var vehicle = entry[1];
+                  if (key in markers) {
+                    markers[key].setPosition(
+                      new google.maps.LatLng(
+                        parseFloat(vehicle.latitude),
+                        parseFloat(vehicle.longitude)
+                      )
+                    );
+                  } else {
+                    var contentString = `<div class="info-window"><div className="info-window-details"><div><h4>Line number : ${
+                      vehicle.lineref ? vehicle.lineref : "?"
+                    }</h4></div><div><h4>Originname : ${
+                      vehicle.originname ? vehicle.originname : "?"
+                    }</h4></div><div><h4>Destination : ${
+                      vehicle.destinationname
+                    }</h4></div></div></div>`;
+
+                    var infowindow = new google.maps.InfoWindow({
+                      content: contentString,
+                    });
+
+                    var marker = new google.maps.Marker({
+                      position: new google.maps.LatLng(
+                        parseFloat(vehicle.latitude),
+                        parseFloat(vehicle.longitude)
+                      ),
+                      icon: "assets/img/directions_bus-24px.svg",
+                      map: map,
+                    });
+
+                    marker.addListener("mouseover", function () {
+                      infowindow.open(map, marker);
+                    });
+                    marker.addListener("mouseout", function () {
+                      infowindow.close(map, marker);
+                    });
+
+                    markers[key] = marker;
+                  }
+                });
+              } else {
+                console.log("error?");
+              }
+            });
+        }, 3000);
+      }
+    </script>
+
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBU6-zHtqL3Zc0k-s20bn3v_gKwlwtE-9g&callback=initMap"
+      async
+      defer
+    ></script>
+    <script src="./scripts.js" async defer></script>
+  </body>
+</html>
