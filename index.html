@@ -28,7 +28,7 @@
           zoom: 13,
         });
 
-        fetch("http://data.foli.fi/citybike")
+        fetch("https://data.foli.fi/citybike")
           .then((response) => {
             return response.json();
           })
@@ -66,7 +66,7 @@
             });
           });
         setInterval(() => {
-          fetch("http://data.foli.fi/siri/vm")
+          fetch("https://data.foli.fi/siri/vm")
             .then((response) => {
               return response.json();
             })
